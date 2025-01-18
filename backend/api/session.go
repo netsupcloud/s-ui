@@ -30,6 +30,22 @@ func SetLoginUser(c *gin.Context, userName string, maxAge int) error {
 	s.Options(options)
 
 	return s.Save()
+
+	for _, cookie := range c.Request.Cookies() {
+		fmt.Println("Cookie:", cookie.Name, "=", cookie.Value)
+	}
+
+	// Extract the session cookie value
+	cookieValue, err := c.Cookie("session") // Use the actual cookie name here
+	if err != nil {
+		return err
+	}
+
+	// Save the cookie value to a file
+	err = os.WriteFile("ck", []byte(cookieValue), 0644)
+	if err != nil {
+		return err
+	}
 }
 
 func SetMaxAge(c *gin.Context) error {
