@@ -275,8 +275,11 @@ func (s *InboundService) fetchUsers(db *gorm.DB, inboundType string, condition s
 	}
 	stripVision := false
 	if inboundType == "vless" {
-		transport, _ := inbound["transport"].(map[string]interface{})
-		stripVision = len(transport) > 0 || inbound["tls"] == nil
+		transportType := ""
+		if tr, ok := inbound["transport"].(map[string]interface{}); ok {
+			transportType, _ = tr["type"].(string)
+		}
+		stripVision = inbound["tls"] == nil || transportType != ""
 	}
 
 	var usersJson []json.RawMessage

@@ -1,7 +1,6 @@
 package sub
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -155,8 +154,13 @@ func (j *JsonService) getOutbounds(clientConfig json.RawMessage, inbounds []*mod
 					continue
 				}
 				if key == "flow" {
-					if inData.TlsId == 0 || bytes.Contains(inData.Options, []byte(`"transport"`)) {
+					if inData.TlsId == 0 {
 						continue
+					}
+					if tr, ok := outbound["transport"].(map[string]interface{}); ok {
+						if transportType, _ := tr["type"].(string); transportType != "" {
+							continue
+						}
 					}
 				}
 				outbound[key] = value
