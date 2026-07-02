@@ -414,3 +414,10 @@ func (a *ApiService) GetCheckOutbound(c *gin.Context) {
 	result := a.ConfigService.CheckOutbound(tag, link)
 	jsonObj(c, result, nil)
 }
+
+func (a *ApiService) GetCertPing(c *gin.Context) {
+	domain := c.PostForm("domain")
+	port := c.PostForm("port")
+	tlsPing, err := util.GetTlsPing(domain, port)
+	jsonObj(c, tlsPing, err)
+}

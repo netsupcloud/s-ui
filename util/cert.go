@@ -6,8 +6,13 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
+	"net"
 	"os"
 	"strings"
+	"time"
+
+	"github.com/alireza0/s-ui/util/common"
+	utls "github.com/refraction-networking/utls"
 )
 
 func CertPEMFromTLS(tlsConfig map[string]interface{}) string {
@@ -88,4 +93,41 @@ func CertSha256Hex(pemData string) string {
 	}
 	sum := sha256.Sum256(cert.Raw)
 	return hex.EncodeToString(sum[:])
+}
+
+func GetTlsPing(domain string, port string) (any, error) {
+	if domain == "" {
+		return "", common.NewError("domain is empty")
+	}
+	if port == "" {
+		port = "443"
+	}
+
+	d := net.Dialer{Timeout: 10 * time.Second}
+	tcpConn, err := d.Dial("tcp", domain+":"+port)
+	if err != nil {
+		return "", common.NewErrorf("Failed to dial tcp: %s", err)
+	}
+	tlsConn := utls.UClient(tcpConn, &utls.Config{
+		InsecureSkipVerify: true,
+		NextProtos:         []string{"h2", "http/1.1"},
+	}, utls.HelloChrome_Auto)
+	err = tlsConn.Handshake()
+	if err != nil {
+		return "", common.NewErrorf("Failed to handshake: %s", err)
+	}
+	var leaf *x509.Certificate
+	for _, cert := range tlsConn.ConnectionState().PeerCertificates {
+		if len(cert.DNSNames) != 0 {
+			leaf = cert
+			break
+		}
+	}
+	sum := sha256.Sum256(leaf.RawSubjectPublicKeyInfo)
+	leafObj := map[string]string{
+		"leafHash": base64.StdEncoding.EncodeToString(sum[:]),
+	}
+
+	return leafObj, nil
+
 }
